@@ -8,13 +8,13 @@ parser = argparse.ArgumentParser(description=
                                  'Home Control RPC auxiliary server.')
 parser.add_argument('--host', default='',
                     help='Host name for WSGI server')
-parser.add_argument('--port', type=int, default=8001,
+parser.add_argument('-p', '--port', type=int, default=8001,
                     help='Port for WSGI server')
-parser.add_argument('--serial', default='/dev/ttyACM0',
+parser.add_argument('-s', '--serial', default='/dev/ttyACM0',
                     help='Serial port where Arduino is connected')
-parser.add_argument('--mock_serial', action='store_true',
+parser.add_argument('-ms', '--mock_serial', action='store_true',
                     help='Enable serial port mocking')
-parser.add_argument('--debug', action='store_true',
+parser.add_argument('-d', '--debug', action='store_true',
                     help='Enable debug server')
 args = parser.parse_args()
 
