@@ -1,5 +1,6 @@
 import sys
 import serial
+from mic import MicAnalyzer
 
 class AcControl(object):
     def __init__(self, serial_port, mock_serial=False):
@@ -21,11 +22,18 @@ class AcControl(object):
                         (self.serial_port, ex)
                 self.ser = None
             
-    def sendCommand(self):
+    def sendCommand(self, beep_timeout=2.0):
+        analyzer = MicAnalyzer()
+        mock_file = None
         if self.mock_serial:
             response = 'test\r\n'
+            from random import choice
+            mock_file = choice(['test-data/noise.raw',
+                                'test-data/beeps-1.raw'])
+            print 'Using mock file', mock_file
         elif self.ser:
             try:
+                analyzer.start_listen(beep_timeout)
                 self.ser.write('t')
                 response = self.ser.readline()
             except serial.SerialException, ex:
@@ -33,5 +41,8 @@ class AcControl(object):
                         (self.serial_port, ex)
                 response = 'Serial Error'
         else:
-            return 'Serial Error'
-        return response.strip()
+            response = 'Serial Error'
+        if 'test' == response.strip():
+            response = 'Success' if analyzer.is_beep(beep_timeout,
+                                            mock_file) else 'Beep Timeout'
+        return response
