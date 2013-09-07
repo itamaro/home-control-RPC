@@ -1,6 +1,6 @@
 import threading
-import time
 import struct
+import sys
 from Queue import Queue, Empty
 import numpy
 
@@ -19,7 +19,6 @@ class MicListenerThread(threading.Thread):
         self.rec_time = rec_time
         self.rate = rate
         self.period_size = 160
-        self.sleep_time = 0.001
         self._stop = threading.Event()
     
     # ask the thread to stop listening and terminate, without waiting for
@@ -32,14 +31,13 @@ class MicListenerThread(threading.Thread):
         
     def run(self):
         if self.rec_time:
-            iter = int(self.rec_time * self.rate * 2 / self.period_size)
+            iter = int(self.rec_time * self.rate / self.period_size)
         else:
             iter = float('+inf')
         if MODE_MIC == self.mode:
             import alsaaudio
             # Open the device in capture mode.
             inp = alsaaudio.PCM(alsaaudio.PCM_CAPTURE)
-            # , alsaaudio.PCM_NONBLOCK)
 
             # Set attributes: Mono, 44100 Hz, 16 bit little endian samples
             inp.setchannels(1)
@@ -57,20 +55,17 @@ class MicListenerThread(threading.Thread):
                 length, data = inp.read()
                 if length:
                     self.sample_buffer.put(data)
-                    # TODO: Do I need this sleep, considering blocking mode?
-                    time.sleep(self.sleep_time)
                     
         elif MODE_MOCK_FILE == self.mode:
             f = self.mock_file
             if type(f) is str:
                 f = open(f, 'rb')
             while iter > 0 and not self.stopped():
-                data = f.read(self.period_size)
+                data = f.read(2 * self.period_size)
                 while data and iter > 0 and not self.stopped():
                     iter -= 1
                     self.sample_buffer.put(data)
-                    time.sleep(self.sleep_time)
-                    data = f.read(self.period_size)
+                    data = f.read(2 * self.period_size)
                 f.seek(0)
             f.close()
 
@@ -179,7 +174,6 @@ class MicAnalyzer(object):
 # Calibrate the beep-threshold value,
 # using either live-microphone or pre-recorded raw files.
 def calibrate(args):
-    import sys
     print '~~ Welcome to the beep-detection calibrator tool! ~~'
     if args.noise_file:
         print 'Detected noise-file. Processing...'
@@ -269,7 +263,6 @@ def graph(args):
 # Look for beeps in a recording,
 # and print the time ranges where beeps were detected
 def detect(args):
-    import sys
     beep_thresh = load_beep_thresh()
     analyzer = MicAnalyzer(args.rate, args.time_window, args.time_step,
                            args.beep_freq, args.freq_band)
@@ -305,6 +298,8 @@ def isbeep(args):
 
 if '__main__' == __name__:
     import argparse
+    import os
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
     parser = argparse.ArgumentParser(description=
                                      'Beep module utilities.')
     parser.add_argument('-r', '--rate', type=int, default=44100,
