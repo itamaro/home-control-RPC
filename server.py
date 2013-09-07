@@ -1,5 +1,6 @@
 import os
 import argparse
+import urlparse
 from wsgiref.simple_server import make_server
 from webcam import WebCam
 from arduino import AcControl
@@ -32,6 +33,8 @@ def application(
         start_response):
     
     pathinfo = environ['PATH_INFO']
+    qs = environ['QUERY_STRING']
+    cmd_params = urlparse.parse_qs(qs)
     if '/webcam.png' == pathinfo:
         status = '200 OK'
         response_headers = [('Content-Type', 'image/png'),]
@@ -39,7 +42,10 @@ def application(
         return open(cam.saveSnapshot(), 'rb').read()
     elif '/ac-command' == pathinfo:
         status = '200 OK'
-        response_body = ac_control.sendCommand()
+        if not set(['mode', 'fan', 'temp', 'pwr'])  \
+                .issubset(cmd_params.keys()):
+            response_body = 'Missing Param'
+        response_body = ac_control.sendCommand(cmd_params)
     elif '/favicon.ico' == pathinfo:
         status = '404 Not Found'
         response_body = 'Not Found'

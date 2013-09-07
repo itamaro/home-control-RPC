@@ -22,7 +22,7 @@ class AcControl(object):
                         (self.serial_port, ex)
                 self.ser = None
             
-    def sendCommand(self, beep_timeout=2.0):
+    def sendCommand(self, params, beep_timeout=2.0):
         analyzer = MicAnalyzer()
         mock_file = None
         if self.mock_serial:
