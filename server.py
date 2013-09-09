@@ -2,27 +2,20 @@ import os
 import argparse
 import urlparse
 from wsgiref.simple_server import make_server
-from webcam import WebCam
-from arduino import AcControl
+from settings import *
 
 parser = argparse.ArgumentParser(description=
                                  'Home Control RPC auxiliary server.')
-parser.add_argument('--host', default='',
+parser.add_argument('--host', default=WsgiHost,
                     help='Host name for WSGI server')
-parser.add_argument('-p', '--port', type=int, default=8001,
+parser.add_argument('-p', '--port', type=int, default=WsgiPort,
                     help='Port for WSGI server')
-parser.add_argument('-s', '--serial', default='/dev/ttyACM0',
+parser.add_argument('-s', '--serial', default=SerialPortID,
                     help='Serial port where Arduino is connected')
-parser.add_argument('-ms', '--mock_serial', action='store_true',
-                    help='Enable serial port mocking')
 parser.add_argument('-d', '--debug', action='store_true',
                     help='Enable debug server')
-args = parser.parse_args()
 
-cam = WebCam()
-cam.saveSnapshot()
-
-ac_control = AcControl(args.serial, args.mock_serial)
+arduino = cam = None
 
 def application(
         # environ points to a dictionary containing CGI like env-variables
@@ -31,21 +24,24 @@ def application(
         # start_response is a callback function supplied by the server
         # which will be used to send the HTTP status and headers to the server
         start_response):
-    
+    # Extract relevant variables from the request
     pathinfo = environ['PATH_INFO']
     qs = environ['QUERY_STRING']
     cmd_params = urlparse.parse_qs(qs)
-    if '/webcam.png' == pathinfo:
+    if '/webcam.png' == pathinfo and cam:
         status = '200 OK'
+        # Take a snapshot with the Cam module and send it over HTTP
         response_headers = [('Content-Type', 'image/png'),]
         start_response(status, response_headers)
         return open(cam.saveSnapshot(), 'rb').read()
-    elif '/ac-command' == pathinfo:
+    elif '/ac-command' == pathinfo and arduino:
         status = '200 OK'
-        if not set(['mode', 'fan', 'temp', 'pwr'])  \
+        if set(['mode', 'fan', 'temp', 'pwr'])  \
                 .issubset(cmd_params.keys()):
-            response_body = 'Missing Param'
-        response_body = ac_control.sendCommand(cmd_params)
+            # All parameters are present - send to Arduino module
+            response_body = arduino.sendCommand(cmd_params)
+        else:
+            response_body = 'Missing Parameter'
     elif '/favicon.ico' == pathinfo:
         status = '404 Not Found'
         response_body = 'Not Found'
@@ -64,6 +60,18 @@ def application(
     return [response_body]
 
 if '__main__' == __name__:
+    args = parser.parse_args()
+    
+    # Initialize enabled modules
+    if CAM_ENABLED:
+        from webcam import WebCam
+        cam = WebCam()
+        cam.saveSnapshot()
+
+    if ARDUINO_ENABLED:
+        from arduino import AcControl
+        arduino = AcControl(args.serial)
+        
     # Instantiate the WSGI server.
     # It will receive the request, pass it to the application
     # and send the application's response to the client

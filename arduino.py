@@ -23,29 +23,28 @@ FanDict = {
     }
 
 class AcControl(object):
-    def __init__(self, serial_port, mock_serial=False):
+    def __init__(self, serial_port):
         self.serial_port = serial_port
-        self.mock_serial = mock_serial
-        if self.mock_serial:
+        if self.isMockSerial():
             self.ser = None
             debug('Arduino A/C-Control v1.0 - Ready')
         else:
-            try:
-                self.ser = serial.Serial(self.serial_port, timeout=1.0)
-                debug(self.ser.readline())
-            except serial.SerialException, ex:
-                debug('Failed opening serial port %s: %s' %
-                        (self.serial_port, ex))
-                self.ser = None
+            # Initialize serial port
+            # (let exceptions bubble up in case of serial errors)
+            self.ser = serial.Serial(self.serial_port, timeout=1.0)
+            debug(self.ser.readline())
+    
+    def isMockSerial(self):
+        return 'MOCK-SERIAL' == self.serial_port
     
     def setParam(self, p, v):
-        if self.mock_serial:
-            res = 'Some parameter set to %d' % (v)
-        elif self.ser:
+        if self.ser:
+            # Send command string via serial and get a line response
             self.ser.write('%s%d' % (p, v))
             res = self.ser.readline().strip()
         else:
-            response = 'Serial Error'
+            # Mocked behaviour - success
+            res = '%s parameter set to %d' % (p, v)
         debug(res)
         if res.find('parameter set to') < 0:
             raise serial.SerialException(
@@ -54,20 +53,23 @@ class AcControl(object):
     def sendSend(self, beep_timeout):
         analyzer = MicAnalyzer()
         mock_file = None
-        if self.mock_serial:
+        if self.ser:
+            # Activate mic-listening and send the "Send" command via serial
+            analyzer.start_listen(beep_timeout)
+            self.ser.write('S')
+            # Dummy-read a line-response, and store the interesting response
+            debug(self.ser.readline().strip())
+            response = self.ser.readline().strip()
+        else:
+            # Mocked behaviour - randomized success / beep-timeout
+            #  (using the microphone analyzer, with canned recording)
             response = 'Success'
             from random import choice
             mock_file = choice(['test-data/noise.raw',
                                 'test-data/beeps-1.raw'])
             debug('Using mock file %s' % (mock_file))
-        elif self.ser:
-            analyzer.start_listen(beep_timeout)
-            self.ser.write('S')
-            debug(self.ser.readline().strip())
-            response = self.ser.readline().strip()
-        else:
-            response = 'Serial Error'
         debug(response)
+        # Wait for beep
         if 'Success' == response and not analyzer.is_beep(beep_timeout,
                                                           mock_file):
             response = 'Beep Timeout'
