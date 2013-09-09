@@ -31,7 +31,7 @@ class AcControl(object):
         else:
             # Initialize serial port
             # (let exceptions bubble up in case of serial errors)
-            self.ser = serial.Serial(self.serial_port, timeout=1.0)
+            self.ser = serial.Serial(self.serial_port, timeout=2.0)
             debug(self.ser.readline())
     
     def isMockSerial(self):
