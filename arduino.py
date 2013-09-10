@@ -1,5 +1,6 @@
 import sys
 import serial
+import time
 from mic import MicAnalyzer
 
 def debug(s):
@@ -23,8 +24,12 @@ FanDict = {
     }
 
 class AcControl(object):
-    def __init__(self, serial_port):
+    def __init__(self, serial_port, beep_timeout, listen_delay,
+                 debug_rec_file=None):
         self.serial_port = serial_port
+        self.beep_timeout = beep_timeout
+        self.listen_delay = listen_delay
+        self.debug_rec_file = debug_rec_file
         if self.isMockSerial():
             self.ser = None
             debug('Arduino A/C-Control v1.0 - Ready')
@@ -50,12 +55,14 @@ class AcControl(object):
             raise serial.SerialException(
                     'Failed setting parameter %s to value %d' % (p, v))
     
-    def sendSend(self, beep_timeout):
+    def sendSend(self):
         analyzer = MicAnalyzer()
         mock_file = None
         if self.ser:
             # Activate mic-listening and send the "Send" command via serial
-            analyzer.start_listen(beep_timeout)
+            analyzer.start_listen(self.beep_timeout,
+                                  debug_rec_file=self.debug_rec_file)
+            time.sleep(self.listen_delay)
             self.ser.write('S')
             # Dummy-read a line-response, and store the interesting response
             debug(self.ser.readline().strip())
@@ -70,18 +77,18 @@ class AcControl(object):
             debug('Using mock file %s' % (mock_file))
         debug(response)
         # Wait for beep
-        if 'Success' == response and not analyzer.is_beep(beep_timeout,
+        if 'Success' == response and not analyzer.is_beep(self.beep_timeout,
                                                           mock_file):
             response = 'Beep Timeout'
         return response
             
-    def sendCommand(self, params, beep_timeout=2.0):
+    def sendCommand(self, params):
         try:
             self.setParam('P', PowerDict[params['pwr'][0]])
             self.setParam('M', ModeDict[params['mode'][0]])
             self.setParam('F', FanDict[params['fan'][0]])
             self.setParam('T', int(params['temp'][0]))
-            response = self.sendSend(beep_timeout)
+            response = self.sendSend()
         except serial.SerialException, ex:
             debug('Serial port %s error: %s' %
                     (self.serial_port, ex))

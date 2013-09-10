@@ -70,7 +70,8 @@ if '__main__' == __name__:
 
     if ARDUINO_ENABLED:
         from arduino import AcControl
-        arduino = AcControl(args.serial)
+        arduino = AcControl(args.serial, BeepDetectionTimeout,
+                            PreDetectionWaitTime, BeepDetectDebugRecFile)
         
     # Instantiate the WSGI server.
     # It will receive the request, pass it to the application

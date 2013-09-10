@@ -11,11 +11,13 @@ MODE_MIC = 1
 MODE_MOCK_FILE = 2
 class MicListenerThread(threading.Thread):
     def __init__(self, sample_buffer, mode=MODE_MIC, mock_file=None,
-                 rec_time=5.0, rate=44100, name='mic-listening-thread'):
+                 rec_time=5.0, rate=44100, debug_rec_file=None,
+                 name='mic-listening-thread'):
         threading.Thread.__init__(self, name=name)
         self.sample_buffer = sample_buffer
         self.mode = mode
         self.mock_file = mock_file
+        self.debug_rec_file = debug_rec_file
         self.rec_time = rec_time
         self.rate = rate
         self.period_size = 160
@@ -31,9 +33,12 @@ class MicListenerThread(threading.Thread):
         
     def run(self):
         if self.rec_time:
-            iter = int(self.rec_time * self.rate / self.period_size)
+            iters = int(self.rec_time * self.rate / self.period_size)
         else:
-            iter = float('+inf')
+            iters = float('+inf')
+        debug_rec_file = None
+        if self.debug_rec_file:
+            debug_rec_file = open(self.debug_rec_file, 'wb')
         if MODE_MIC == self.mode:
             import alsaaudio
             # Open the device in capture mode.
@@ -49,25 +54,32 @@ class MicListenerThread(threading.Thread):
             # Each frame being 2 bytes long.
             inp.setperiodsize(self.period_size)
             
-            while iter > 0 and not self.stopped():
-                iter -= 1
+            while iters > 0 and not self.stopped():
+                iters -= 1
                 # Read data from device
                 length, data = inp.read()
                 if length:
                     self.sample_buffer.put(data)
-                    
+                    if debug_rec_file:
+                        debug_rec_file.write(data)
+            
         elif MODE_MOCK_FILE == self.mode:
             f = self.mock_file
             if type(f) is str:
                 f = open(f, 'rb')
-            while iter > 0 and not self.stopped():
+            while iters > 0 and not self.stopped():
                 data = f.read(2 * self.period_size)
-                while data and iter > 0 and not self.stopped():
-                    iter -= 1
+                while data and iters > 0 and not self.stopped():
+                    iters -= 1
                     self.sample_buffer.put(data)
                     data = f.read(2 * self.period_size)
+                    if debug_rec_file:
+                        debug_rec_file.write(data)
                 f.seek(0)
             f.close()
+        
+        if debug_rec_file:
+            debug_rec_file.close()
 
 THRESHOLD_FILE_NAME = 'beep-thresh'
 def load_beep_thresh():
@@ -144,16 +156,12 @@ class MicAnalyzer(object):
             pass
     
     # Activate the listening thread.
-    def start_listen(self, rec_time=5.0, rec_file=None):
-        if rec_file:
-            self.listener = MicListenerThread(self.sample_buffer,
-                                              MODE_MOCK_FILE,
-                                              rec_time=rec_time,
-                                              mock_file=rec_file)
-        else:
-            self.listener = MicListenerThread(self.sample_buffer,
-                                              MODE_MIC,
-                                              rec_time=rec_time)
+    def start_listen(self, rec_time=5.0, rec_file=None, debug_rec_file=None):
+        rec_mode = MODE_MOCK_FILE if rec_file else MODE_MIC
+        self.listener = MicListenerThread(self.sample_buffer, rec_mode,
+                                          rec_time=rec_time,
+                                          mock_file=rec_file,
+                                          debug_rec_file=debug_rec_file)
         self.listener.start()
     
     # Listens up to `timeout` seconds.
@@ -178,12 +186,12 @@ def calibrate(args):
     if args.noise_file:
         print 'Detected noise-file. Processing...'
     else:
-        print 'Please record a few seconds of background noise (5sec).'
+        print 'Please record a few seconds of background noise (6sec).'
         print 'Place the microphone in its final location, and keep quiet.'
         raw_input('When ready, hit Enter')
     analyzer = MicAnalyzer(args.rate, args.time_window, args.time_step,
                            args.beep_freq, args.freq_band)
-    analyzer.start_listen(5.0, args.noise_file)
+    analyzer.start_listen(6.0, args.noise_file)
     nemin = float('+inf')
     nemax = 0
     for ts, energy in analyzer.energy_generator():
@@ -196,13 +204,13 @@ def calibrate(args):
     if args.beep_file:
         print 'Detected beeps-file. Processing...'
     else:
-        print 'Please record a few seconds of with at least one beep.'
+        print 'Please record a few seconds with at least one beep.'
         print 'Place the microphone in its final location, '     \
-              'and make beeps during the following 5 seconds.'
+              'and make beeps during the following 6 seconds.'
         raw_input('When ready, hit Enter')
     analyzer = MicAnalyzer(args.rate, args.time_window, args.time_step,
                            args.beep_freq, args.freq_band)
-    analyzer.start_listen(5.0, args.beep_file)
+    analyzer.start_listen(6.0, args.beep_file)
     beeps = list()
     inbeep = False
     for ts, energy in analyzer.energy_generator():
@@ -229,12 +237,18 @@ def calibrate(args):
                       'the number of beeps you heard? (''Y'' or ''N'') ')[0])
         if detect_success:
             # Go over the beeps, calculate the mean energy level of each one,
-            # and set the final threshold to be the average of the weakest one
-            beep_thresh = int(min([numpy.mean(beep) for beep in beeps]))
-            print 'Calibration completed successfully!'
-            with open(THRESHOLD_FILE_NAME, 'w') as f:
-                f.write('%d\n' % (beep_thresh))
-            print 'Final beep threshold set to', beep_thresh
+            # and set the final threshold to be mid-way between the average of
+            # the weakest one and the noise threshold (assuming beep>noise...)
+            min_beep = min([numpy.mean(beep) for beep in beeps])
+            if min_beep > noise_thresh:
+                beep_thresh = int((noise_thresh + min_beep) / 2)
+                print 'Calibration completed successfully!'
+                with open(THRESHOLD_FILE_NAME, 'w') as f:
+                    f.write('%d\n' % (beep_thresh))
+                print 'Final beep threshold set to', beep_thresh
+            else:
+                print 'Beep level is too low compared to noise level.\n'    \
+                      'Choose a better microphone location and try again.'
         else:
             print 'Failed calibration. Please try again'
     else:
