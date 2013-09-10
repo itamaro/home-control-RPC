@@ -58,16 +58,7 @@ class AcControl(object):
     def sendSend(self):
         analyzer = MicAnalyzer()
         mock_file = None
-        if self.ser:
-            # Activate mic-listening and send the "Send" command via serial
-            analyzer.start_listen(self.beep_timeout,
-                                  debug_rec_file=self.debug_rec_file)
-            time.sleep(self.listen_delay)
-            self.ser.write('S')
-            # Dummy-read a line-response, and store the interesting response
-            debug(self.ser.readline().strip())
-            response = self.ser.readline().strip()
-        else:
+        if not self.ser:
             # Mocked behaviour - randomized success / beep-timeout
             #  (using the microphone analyzer, with canned recording)
             response = 'Success'
@@ -75,10 +66,18 @@ class AcControl(object):
             mock_file = choice(['test-data/noise.raw',
                                 'test-data/beeps-1.raw'])
             debug('Using mock file %s' % (mock_file))
+        # Activate mic-listening and send the "Send" command via serial
+        analyzer.start_listen(self.beep_timeout, rec_file=mock_file,
+                              debug_rec_file=self.debug_rec_file)
+        time.sleep(self.listen_delay)
+        if self.ser:
+            self.ser.write('S')
+            # Dummy-read a line-response, and store the interesting response
+            debug(self.ser.readline().strip())
+            response = self.ser.readline().strip()
         debug(response)
         # Wait for beep
-        if 'Success' == response and not analyzer.is_beep(self.beep_timeout,
-                                                          mock_file):
+        if 'Success' == response and not analyzer.is_beep():
             response = 'Beep Timeout'
         return response
             

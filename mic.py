@@ -164,12 +164,11 @@ class MicAnalyzer(object):
                                           debug_rec_file=debug_rec_file)
         self.listener.start()
     
-    # Listens up to `timeout` seconds.
-    # returns `True` if beep is detected during listening period,
+    # Returns `True` if beep is detected during listening period,
     # otherwise- returns `False`.
-    def is_beep(self, timeout=3.0, rec_file=None):
+    # (assuming listening was initiated)
+    def is_beep(self):
         beep_thresh = load_beep_thresh()
-        self.start_listen(timeout, rec_file)
         for ts, energy in self.energy_generator():
             if energy >= beep_thresh:
                 # tell the thread to stop listening (even before timeout)
@@ -305,7 +304,8 @@ def detect(args):
 def isbeep(args):
     analyzer = MicAnalyzer(args.rate, args.time_window, args.time_step,
                            args.beep_freq, args.freq_band)
-    if analyzer.is_beep(timeout=args.rec_time, rec_file=args.rec_file):
+    analyzer.start_listen(rec_time=args.rec_time, rec_file=args.rec_file)
+    if analyzer.is_beep():
         print 'Beep detected'
     else:
         print 'Beep not detected'
