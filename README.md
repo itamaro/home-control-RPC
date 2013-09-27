@@ -13,7 +13,7 @@ Design considerations, examples, and some implementation details may be found in
 [my blog post](http://itamaro.com/2013/09/24/ac-control-project-using-beeps-for-feedback).
 
 ### MicAnalyzer API Documentation
-For detailed method-arguments and default values documentation - [read in the code](mic.py).
+For detailed method-arguments and default values documentation - [read in the code](HomeControlRPC/mic.py).
 - Object initialization takes various (all optional) parameters regarding audio processing for beep detection (sample rate, expected beep-frequency and band-width, time-windowing parameters).
 - `statr_listen(...)` - creates a listening thread that feeds samples for processing by the main thread.
 - `energy_generator()` - a generator method yielding (`timestamp`, `energy`) tuples extracted from the processed audio signal.
