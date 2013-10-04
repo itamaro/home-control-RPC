@@ -1,13 +1,71 @@
 HomeControl RPC Server and Modules
 ==================================
 
-Python modules that implement RPC services for the Home Control system.
+Python modules that implement RPC services for my [Home Control system](https://github.com/itamaro/home-control-web).
+
+TODO: Link to blog post.
+
+The RPC server should be installed on the devices that will be responsible for interacting with the controlled systems
+(e.g. a Linux laptop, raspberry-pi, or whatever, that connects to an Arduino / webcam / microphone),
+and the [home-control web-app](https://github.com/itamaro/home-control-web) needs to be configured to communicate with the RPC server.
+
+
+Installation
+------------
+
+Requirements:
+
+1. Python (tested with 2.7)
+2. For Arduino interaction:
+   1. [PySerial library](http://pyserial.sourceforge.net/) & root privileges!
+   2. [PyAlsaAudio library](http://pyalsaaudio.sourceforge.net/pyalsaaudio.html) for live audio recording on Linux (no support for audio recording on Windows).
+   3. Optional: [matplotlib library](http://matplotlib.org/) (version >= 3.0) for signal energy graphing.
+3. For webcam interaction:
+   1. On Linux: [GStreamer](http://gstreamer.freedesktop.org/)
+   2. On Windows: [VideoCapture](http://videocapture.sourceforge.net/)
+
+Get and configure the RPC server:
+
+1. Clone the repository to the machine / device that will run it.
+2. Create a `local_settings.py` file in [HomeControlRPC](HomeControlRPC/) to override settings from the [generic settings](HomeControlRPC/settings.py).
+
+A sample configuration for a set up with Arduino for A/C control, connected over USB to a Ubuntu Linux laptop, listening in port 8001:
+
+```python
+# Modules selection section
+ARDUINO_ENABLED =   True
+CAM_ENABLED =       False
+
+# WSGI HTTP server parameters
+WsgiHost = ''
+WsgiPort = 8001
+
+# Serial port device ID where the Arduino is connected
+# ('COM#' on Windows, some '/dev/tty*' on Linux)
+# set to 'MOCK-SERIAL' in order to use a mock serial port instead of a real one
+SerialPortID = '/dev/ttyACM0'
+```
+
+(see the [generic settings file](HomeControlRPC/settings.py) for all overridable parameters and their default values)
+
+If used for A/C control with beep-detection-based feedback - place the microphone in its final location and run the beep calibration wizard:
+
+1. `cd /path/to/home-control-RPC/HomeControlRPC`
+2. `python mic.py calibrate` (note: run as a user that has write access to the directory. [see below](#stand-alone-program-commands-and-parameters) for more details on mic module commands)
+
+Start the server:
+
+1. `cd /path/to/home-control-RPC/HomeControlRPC`
+2. `sudo python server.py` (note: required to run as root in order to open serial channel)
+
+TODO: Add details regarding setting up as a service instead of manual execution.
+
 
 mic.py - Audio processing for Beep detection
 --------------------------------------------
 
 The main objective of this module is to supply the `MicAnalyzer` class as an API
-for the RPC server to receive beep-detection functionality.
+for the RPC server for beep-detection functionality.
 
 Design considerations, examples, and some implementation details may be found in
 [my blog post](http://itamaro.com/2013/09/24/ac-control-project-using-beeps-for-feedback).
@@ -42,8 +100,3 @@ Command-line flags (optional) for the calibrate command:
 - `beep-file`:   Pre-recorded PCM file with beeps to use instead of beep-recording
 - `beep-count`:  Number of distinct beeps in pre-recorded beep-file, to use instead of user input
 
-
-### Dependencies
-
-- For live audio recording, the module depends on [PyAlsaAudio library](http://pyalsaaudio.sourceforge.net/pyalsaaudio.html) for Linux.
-- For signal energy graphing, the module depends on [matplotlib library](http://matplotlib.org/) (version >= 3.0).
