@@ -3,7 +3,7 @@ HomeControl RPC Server and Modules
 
 Python modules that implement RPC services for my [Home Control system](https://github.com/itamaro/home-control-web).
 
-TODO: Link to blog post.
+Also see [my blog post](http://itamaro.com/2013/10/04/ac-control-project-bringing-it-together/).
 
 The RPC server should be installed on the devices that will be responsible for interacting with the controlled systems
 (e.g. a Linux laptop, raspberry-pi, or whatever, that connects to an Arduino / webcam / microphone),
