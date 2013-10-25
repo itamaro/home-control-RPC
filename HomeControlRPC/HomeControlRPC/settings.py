@@ -119,7 +119,8 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
     'AC',
-    'cam',
+    #'cam',
+    'rhost',
     'south',
 )
 
@@ -158,6 +159,10 @@ LOGGING = {
             'level': 'DEBUG',
         },
         'cam': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'rhost': {
             'handlers': ['console'],
             'level': 'DEBUG',
         },
