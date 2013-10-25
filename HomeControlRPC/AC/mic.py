@@ -4,6 +4,10 @@ import sys
 from Queue import Queue, Empty
 import numpy
 
+from . import get_path
+
+THRESHOLD_FILE_NAME = get_path('beep-thresh')
+
 # The MicListenerThread will listen on a live-microphone (or simulate it using
 # a pre-recorded audio file), and push recorded sample onto a queue for
 # processing by a worker thread (that owns the queue).
@@ -65,7 +69,7 @@ class MicListenerThread(threading.Thread):
             
         elif MODE_MOCK_FILE == self.mode:
             f = self.mock_file
-            if type(f) is str:
+            if type(f) in (str, unicode):
                 f = open(f, 'rb')
             while iters > 0 and not self.stopped():
                 data = f.read(2 * self.period_size)
@@ -81,7 +85,6 @@ class MicListenerThread(threading.Thread):
         if debug_rec_file:
             debug_rec_file.close()
 
-THRESHOLD_FILE_NAME = 'beep-thresh'
 def load_beep_thresh():
     try:
         with open(THRESHOLD_FILE_NAME, 'r') as f:
