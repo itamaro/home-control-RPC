@@ -157,5 +157,9 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'DEBUG',
         },
+        'cam': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
     }
 }
