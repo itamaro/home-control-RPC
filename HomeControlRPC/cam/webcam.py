@@ -35,3 +35,9 @@ class WebCam(object):
                 return False
         return self.outfilename
 
+if '__main__' == __name__:
+    path = None
+    if 2 <= len(sys.argv):
+        path = sys.argv[-1]
+    cam = WebCam(path)
+    print cam.saveSnapshot()
