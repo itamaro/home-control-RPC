@@ -9,24 +9,12 @@ from mic import MicAnalyzer
 
 logger = logging.getLogger(__name__)
 
-PowerDict = {
-    'Toggle': 0,
-    'Leave': 1,
-    }
-ModeDict = {
-    'Cool': 0,
-    'Heat': 1,
-    'Fan': 2,
-    'Dry': 3,
-    }
-FanDict = {
-    'Auto': 0,
-    'Low': 1,
-    'Medium': 2,
-    'High': 3,
-    }
-
 class AcControl(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    
+    # The priority for using when sending commands (lower value = higher priority)
+    priority = models.PositiveIntegerField(default=1)
+    
     # Serial port device ID where the Arduino is connected
     # ('COM#' on Windows, some '/dev/tty*' on Linux)
     # set to 'MOCK-SERIAL' to mock the serial port instead of using a real one
@@ -40,13 +28,13 @@ class AcControl(models.Model):
     listen_delay = models.FloatField(default=0.2)
     
     # Set to full path of debug recording file
-    # If not None, the beep-detection recording will be saved to this file.
-    debug_rec_file = models.CharField(max_length=255, blank=True)
+    # If not blank, the beep-detection recording will be saved to this file.
+    debug_rec_file = models.CharField(max_length=255, blank=True, default='')
     
     _serial = None
     
     def __unicode__(self):
-        return u'%s(%s)' % (self.__class__.__name__, self.serial_port)
+        return u'%s (%s) #%d' % (self.name, self.serial_port, self.priority)
     
     def isMockSerial(self):
         return u'MOCK-SERIAL' == self.serial_port
@@ -106,9 +94,9 @@ class AcControl(models.Model):
     def sendCommand(self, params):
         try:
             self.initSerialPort()
-            self.writeParam('P', PowerDict[params['pwr']])
-            self.writeParam('M', ModeDict[params['mode']])
-            self.writeParam('F', FanDict[params['fan']])
+            self.writeParam('P', int(params['pwr']))
+            self.writeParam('M', int(params['mode']))
+            self.writeParam('F', int(params['fan']))
             self.writeParam('T', int(params['temp']))
             res = self.writeSendAndListen()
         except serial.SerialException, ex:

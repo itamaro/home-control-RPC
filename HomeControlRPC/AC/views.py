@@ -12,7 +12,7 @@ def send_command(request):
     if set(['mode', 'fan', 'temp', 'pwr']).issubset(request.GET.keys()):
         # Try every available AcControl object to send the command,
         #  until the first one that succeeds
-        for ac_control in AcControl.objects.all():
+        for ac_control in AcControl.objects.all().order_by('priority'):
             logger.debug('Attempting sendCommand with %s' % (ac_control))
             res = ac_control.sendCommand(request.GET)
             if u'Success' == res:
