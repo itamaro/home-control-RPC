@@ -1,49 +1,36 @@
-HomeControl RPC Server and Modules
-==================================
+HomeControl RPC Server and Apps
+===============================
 
-Python modules that implement RPC services for the Home Control system.
+Django project & apps that implement RPC services for the Home Control system.
 
-mic.py - Audio processing for Beep detection
---------------------------------------------
-
-The main objective of this module is to supply the `MicAnalyzer` class as an API
-for the RPC server to receive beep-detection functionality.
-
-Design considerations, examples, and some implementation details may be found in
-[my blog post](http://itamaro.com/2013/09/24/ac-control-project-using-beeps-for-feedback).
-
-### MicAnalyzer API Documentation
-For detailed method-arguments and default values documentation - [read in the code](mic.py).
-- Object initialization takes various (all optional) parameters regarding audio processing for beep detection (sample rate, expected beep-frequency and band-width, time-windowing parameters).
-- `statr_listen(...)` - creates a listening thread that feeds samples for processing by the main thread.
-- `energy_generator()` - a generator method yielding (`timestamp`, `energy`) tuples extracted from the processed audio signal.
-- `is_beep()` - returns True is a beep is detected during active listening session (and False is the session ends before a beep is detected).
-
-### Stand-alone program commands and parameters
-In addition to be used as API, the module also supports execution as stand-alone program with several commands.
-- `graph`:       Graphs the energy of a signal over time
-- `detect`:      Live beep-detection in audio signal with ..**.. visual feedback
-- `isbeep`:      Beep-detection in audio signal with no live feedback, returns on detection
-- `calibrate`:   Beep-threshold clibration wizard
-
-Common command-line flags to all commands (all optional):
-- `rate`: Audio signal sample rate
-- `time-window`: The time-window, in seconds, for which a an energy value is extracted
-- `time-step`:   For every time-step (in seconds) starting time-window, an energy value is extracted (calculated over the last time-window seconds)
-- `beep-freq`:   The expected central frequency (in Hz) of the beep sound
-- `freq-band`:   The estimated band-width around the central frequency to integrate over for energy extraction
-- `rec-time`:    The maximal recording length (in seconds) for a single listening session
-
-Common command-line flag (optional) to the graph, detect and isbeep commands:
-- `rec-file`:    Pre-recorded PCM file to use instead of live recording
-
-Command-line flags (optional) for the calibrate command:
-- `noise-file`:  Pre-recorded PCM file with reference background noise to use instead of noise-recording
-- `beep-file`:   Pre-recorded PCM file with beeps to use instead of beep-recording
-- `beep-count`:  Number of distinct beeps in pre-recorded beep-file, to use instead of user input
+See [my blog post](http://itamaro.com/2013/10/04/ac-control-project-bringing-it-together/) for extended description and design.
 
 
-### Dependencies
+Installation
+------------
 
-- For live audio recording, the module depends on [PyAlsaAudio library](http://pyalsaaudio.sourceforge.net/pyalsaaudio.html) for Linux.
-- For signal energy graphing, the module depends on [matplotlib library](http://matplotlib.org/) (version >= 3.0).
+As a Django project & apps, installation and deployment are not different than [other Django projects](https://docs.djangoproject.com/en/1.5/howto/deployment/).
+
+1. Clone the repository to the computer that will run the RPC app(s).
+2. Optionally, create a `local_settings.py` file in `HomeControlRPC/HomeControlRPC` to override settings from the [generic settings file](HomeControlRPC/HomeControlRPC/settings.py) (feel free to use [local_settings.py.sample](HomeControlRPC/HomeControlRPC/local_settings.py.sample) as a suggestion).
+3. Run `manage.py syncdb` to initialize the DB (and create a super user).
+4. Set up your web server of choice to serve the Django site.
+5. Access the admin interface (e.g. at `http://you-deployed-host/admin/`) to configure the installed RPC apps (see the app-specific documentation for details on their configurations).
+6. Celebrate.
+
+
+Available RPC Apps
+------------------
+
+- [A/C RPC App](HomeControlRPC/AC)
+- [Remote Host RPC App](HomeControl/rhost)
+- [WebCam RPC App](HomeControl/cam)
+
+
+Dependencies
+------------
+
+- [Django](https://www.djangoproject.com/) (developed and tested with v1.5).
+- For live audio recording, the A/C RPC app depends on [PyAlsaAudio library](http://pyalsaaudio.sourceforge.net/pyalsaaudio.html) for Linux (not supported in Windows).
+- For signal energy graphing, the [mic module](HomeControlRPC/AC/mic.py) depends on [matplotlib library](http://matplotlib.org/) (version >= 3.0).
+- For schema management and migrations (for development) - [Django South](http://south.aeracode.org/) (developed with v0.8).

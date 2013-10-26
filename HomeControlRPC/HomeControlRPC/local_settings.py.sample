@@ -1,0 +1,11 @@
+DEBUG = False
+
+# Hosts/domain names that are valid for this site; required if DEBUG is False
+# See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
+ALLOWED_HOSTS = ['https://your.domain.com', ]
+
+# Make this unique, and don't share it with anybody.
+SECRET_KEY = '(kpl22+(zehdvbl--x=lzn5k3*him9@5-9#byq+kbc@+3q04qk'
+# Replace this with your own generated thingie!!!
+
+# Any other setting from settings.py you'd like to override...
