@@ -15,7 +15,7 @@ def send_command(request):
         for ac_control in AcControl.objects.all().order_by('priority'):
             logger.debug('Attempting sendCommand with %s' % (ac_control))
             res = ac_control.sendCommand(request.GET)
-            if u'Success' == res:
+            if res in (u'Success', u'Beep Timeout'):
                 break
     else:
         res = u'Missing Parameter'
