@@ -3,6 +3,7 @@ import os
 import tempfile
 import time
 import logging
+from mimetypes import guess_type
 
 from django.db import models
 
@@ -19,8 +20,10 @@ else:
     DEFAULT_DEV = 'gst-launch-0.10'
 
 def is_file_image(path):
-    return os.path.isfile(path) and   \
-           os.path.splitext(path)[-1].lower() in ('.png', '.jpg', '.gif')
+    mime, _ = guess_type(path)
+    return os.path.isfile(path) and mime and   \
+           mime.startswith('image/')
+           #os.path.splitext(path)[-1].lower() in ('.png', '.jpg', '.gif')
     
 def _get_tmp_filename():
     tmpfile = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
@@ -49,10 +52,18 @@ class WebCam(models.Model):
         return u'%s #%d' % (self.name, self.priority)
     
     def saveSnapshot(self):
-        if is_file_image(self.webcam_source):
-            logger.debug('%s returning mock image file "%s"' %
-                         (self, self.webcam_source))
-            return self.webcam_source
+        webcam_source = self.webcam_source
+        if os.path.isdir(webcam_source):
+            logger.debug('%s webcam choosing random image from "%s"' %
+                         (self, webcam_source))
+            from random import choice
+            webcam_source = os.path.join(webcam_source,
+                                         choice(os.listdir(webcam_source)))
+        print webcam_source
+        if is_file_image(webcam_source):
+            logger.debug('Webcam %s returning mock image file "%s"' %
+                         (self, webcam_source))
+            return webcam_source
         snapshot_file = self.snapshot_file
         if not snapshot_file:
             snapshot_file = _get_tmp_filename()
