@@ -27,10 +27,10 @@ Available RPC Apps
 - [WebCam RPC App](HomeControl/cam)
 
 
-Dependencies
+Requirements
 ------------
 
 - [Django](https://www.djangoproject.com/) (developed and tested with v1.5).
-- For live audio recording, the A/C RPC app depends on [PyAlsaAudio library](http://pyalsaaudio.sourceforge.net/pyalsaaudio.html) for Linux (not supported in Windows).
-- For signal energy graphing, the [mic module](HomeControlRPC/AC/mic.py) depends on [matplotlib library](http://matplotlib.org/) (version >= 3.0).
+- For live audio recording, the A/C RPC app requires [PyAlsaAudio library](http://pyalsaaudio.sourceforge.net/pyalsaaudio.html) for Linux (not supported in Windows).
+- For signal energy graphing, the [mic module](HomeControlRPC/AC/mic.py) requires [matplotlib library](http://matplotlib.org/) (version >= 3.0).
 - For schema management and migrations (for development) - [Django South](http://south.aeracode.org/) (developed with v0.8).

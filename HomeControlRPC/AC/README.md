@@ -58,6 +58,14 @@ The settings:
 * `listen_delay`: The time (float in seconds) to wait between starting listening on the microphone and sending the IR signal (default: 0.2 sec)
 * `debug_rec_file`: A full path to a debug recording file (that must be write-accessible to the Django process), that will be used to store the beep-detection recording, if not blank (default: blank).
 
+
+App Requirements
+----------------
+
+- For live audio recording, the module requires [PyAlsaAudio library](http://pyalsaaudio.sourceforge.net/pyalsaaudio.html) for Linux.
+- For signal energy graphing, the module requires [matplotlib library](http://matplotlib.org/) (version >= 3.0).
+
+
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *   
 
 
@@ -103,8 +111,3 @@ Command-line flags (optional) for the calibrate command:
 - `beep-file`:   Pre-recorded PCM file with beeps to use instead of beep-recording
 - `beep-count`:  Number of distinct beeps in pre-recorded beep-file, to use instead of user input
 
-
-### Dependencies
-
-- For live audio recording, the module depends on [PyAlsaAudio library](http://pyalsaaudio.sourceforge.net/pyalsaaudio.html) for Linux.
-- For signal energy graphing, the module depends on [matplotlib library](http://matplotlib.org/) (version >= 3.0).
