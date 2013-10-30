@@ -76,7 +76,7 @@ mic.py - Audio processing for Beep detection
 --------------------------------------------
 
 The main objective of this module is to supply the `MicAnalyzer` class as an API
-for the A/C RPC app to receive beep-detection functionality.
+for the A/C RPC app for beep-detection functionality.
 
 Design considerations, examples, and some implementation details may be found in
 [my blog post](http://itamaro.com/2013/09/24/ac-control-project-using-beeps-for-feedback).
