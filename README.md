@@ -37,7 +37,6 @@ Available RPC Apps
 ------------------
 
 - [A/C RPC App](HomeControlRPC/AC)
-- [Remote Host RPC App](HomeControlRPC/rhost)
 - [WebCam RPC App](HomeControlRPC/cam)
 
 
