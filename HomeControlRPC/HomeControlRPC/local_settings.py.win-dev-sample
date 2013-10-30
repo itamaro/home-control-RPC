@@ -1,0 +1,13 @@
+DEBUG = True
+TEMPLATE_DEBUG = DEBUG
+
+# Make this unique, and don't share it with anybody.
+SECRET_KEY = '(kpl22+(zehdvbl--x=lzn5k3*him9@5-9#byq+kbc@+3q04qk'
+# Replace this with your own generated thingie!!!
+
+from settings import INSTALLED_APPS
+INSTALLED_APPS += (
+    'south',
+)
+
+# Any other setting from settings.py you'd like to override...
