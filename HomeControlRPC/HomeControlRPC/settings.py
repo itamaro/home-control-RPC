@@ -25,6 +25,10 @@ SITE_ID = 1
 # If you set this to False, Django will not use timezone-aware datetimes.
 USE_TZ = True
 
+# URL prefix for static files.
+# Example: "http://example.com/static/", "http://static.example.com/"
+STATIC_URL = '/static/'
+
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = '(kpl22+(zehdvbl--x=lzn5k3*him9@5-9#byq+kbc@+3q04qk'
 
@@ -49,6 +53,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.messages',
+    'django.contrib.staticfiles',
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
