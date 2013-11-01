@@ -48,7 +48,7 @@ class AcControl(models.Model):
             # (let exceptions bubble up in case of serial errors)
             logger.debug('Initializing %s' % (self))
             self._serial = serial.Serial(self.serial_port, timeout=2.0)
-            logger.debug(self._serial.readline())
+            logger.debug(self._serial.readline().strip())
     
     def writeParam(self, p, v):
         if self._serial:
@@ -65,16 +65,19 @@ class AcControl(models.Model):
             raise serial.SerialException(
                     u'Failed setting parameter %s to value %d' % (p, v))
     
+    def _get_mic_mock_file(self):
+        if self.isMockSerial():
+            from random import choice
+            return choice([get_path(u'test-data', 'noise.raw'),
+                           get_path(u'test-data', 'beeps-1.raw')])
+    
     def writeSendAndListen(self):
         analyzer = MicAnalyzer()
-        mock_file = get_path(u'test-data', 'beeps-1.raw')
+        mock_file = self._get_mic_mock_file()
         if self.isMockSerial():
             # Mocked behaviour - randomized success / beep-timeout
             #  (using the microphone analyzer, with canned recording)
             res = u'Success'
-            from random import choice
-            mock_file = choice([get_path(u'test-data', 'noise.raw'),
-                                get_path(u'test-data', 'beeps-1.raw')])
             logger.debug(u'Using mock file %s' % (mock_file))
         # Activate mic-listening and send the "Send" command via serial
         analyzer.start_listen(self.beep_timeout, rec_file=mock_file,
@@ -103,6 +106,9 @@ class AcControl(models.Model):
             logger.debug(u'Serial port %s error: %s' % (self.serial_port, ex))
             res = u'Serial Error'
         except KeyError, ex:
-            res = u'Unsupported Parameter Value %s' % (ex)
+            res = u'Missing Parameter (%s)' % (ex)
             logger.debug(res)
+        except ValueError, ex:
+            res = u'Invalid Parameter'
+            logger.debug(u'%s (%s)' % (res, ex))
         return res

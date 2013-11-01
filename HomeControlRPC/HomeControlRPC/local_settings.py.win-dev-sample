@@ -8,6 +8,12 @@ SECRET_KEY = '(kpl22+(zehdvbl--x=lzn5k3*him9@5-9#byq+kbc@+3q04qk'
 from settings import INSTALLED_APPS
 INSTALLED_APPS += (
     'south',
+    'django_nose',
 )
+
+# Nose test settings
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+NOSE_ARGS = ['--with-fixture-bundling', '--with-coverage',
+             '--cover-package=AC.models', ]
 
 # Any other setting from settings.py you'd like to override...

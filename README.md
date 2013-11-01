@@ -83,8 +83,8 @@ Local Development Setup in Windows
 (my dev-env is Windows 7 Professional SP1 x64)
 
 1. Install Python, setuptools, pip, Git client (e.g. [Git Extensions](https://code.google.com/p/gitextensions/))
-2. `pip install Django south`
-3. Clone `https://github.com/itamaro/home-control-PC.git` to your local workspace (e.g. `C:\Users\<name>\Workspaces\home-control\home-control-RPC`.
+2. `pip install Django south nose django-nose mock`
+3. Clone `https://github.com/itamaro/home-control-RPC.git` to your local workspace (e.g. `C:\Users\<name>\Workspaces\home-control\home-control-RPC`.
 4. Copy `local_settings.py.win-dev-sample` to `local_settings.py` in the `HomeControlRPC\HomeControlRPC` directory.
    * Edit it until you're happy.
 5. In command prompt, cd to `C:\Users\<name>\Workspaces\home-control\home-control-RPC\HomeControlRPC`

@@ -6,3 +6,4 @@ local_settings.py
 beep-thresh
 home_control_rpc.db
 migrations
+.coverage
