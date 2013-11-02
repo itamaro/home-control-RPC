@@ -7,11 +7,11 @@ import serial
 from mock import Mock, call, create_autospec, patch
 from django.utils import unittest
 from django.core.urlresolvers import reverse
-from  django.test import TestCase as DjangoTestCase
-from django_nose import FastFixtureTestCase as TestCase
+from  django.test import TestCase as TestCase
 
 from . import get_path
 import AC
+import AC.views
 from AC.models import AcControl
 
 class RegExMatcher():
@@ -19,7 +19,6 @@ class RegExMatcher():
         self.matcher = re.compile(pattern)
     
     def __eq__(self, second):
-        print second
         match = self.matcher.match(second)
         return True if match else False
     
@@ -39,7 +38,19 @@ arduino_ac_valid_params = {
 }
 
 class ArduinoGoldenModel():
-    replies = list()
+    GOOD = 0
+    BAD = 1
+    
+    @classmethod
+    def serial_config(cls, mocked_serial, mode=None):
+        if cls.BAD == mode:
+            mocked_serial.configure_mock(**{
+                'side_effect': serial.SerialException('boom'),
+            })
+        else:
+            mocked_serial.configure_mock(**{
+                'return_value': cls(),
+            })
     
     def __init__(self, *args, **kwargs):
         self.replies = ['Arduino A/C-Control v1.0 - Ready\n']
@@ -185,9 +196,7 @@ class AcControlPseudoMockedMethodsTests(TestCase):
         doesn't raise an exception, a debug message is logged,
         and the _serial property is set.
         """
-        mocked_serial.configure_mock(**{
-            'return_value': ArduinoGoldenModel(),
-        })
+        ArduinoGoldenModel.serial_config(mocked_serial)
         try:
             self.ac.initSerialPort()
         except Exception, ex:
@@ -205,9 +214,8 @@ class AcControlPseudoMockedMethodsTests(TestCase):
         Check that calling initSerialPort with bad serial port
         raises serial exception.
         """
-        mocked_serial.configure_mock(**{
-            'side_effect': serial.SerialException('boom'),
-        })
+        ArduinoGoldenModel.serial_config(mocked_serial,
+                                         ArduinoGoldenModel.BAD)
         self.assertRaises(serial.SerialException, self.ac.initSerialPort)
 
     def test_write_param_uninitialized_serial_error(self):
@@ -222,9 +230,7 @@ class AcControlPseudoMockedMethodsTests(TestCase):
         Check that writeParam() raises a serial exception if an invalid param
         value is written, and that the Arduino response is logged.
         """
-        mocked_serial.configure_mock(**{
-            'return_value': ArduinoGoldenModel(),
-        })
+        ArduinoGoldenModel.serial_config(mocked_serial)
         try:
             self.ac.initSerialPort()
         except Exception, ex:
@@ -253,9 +259,7 @@ class AcControlPseudoMockedMethodsTests(TestCase):
             (u'Beep Timeout', get_path(u'test-data', 'noise.raw')),
         ]
         for exp_res, mock_file in ac_commands:
-            mocked_serial.configure_mock(**{
-                'return_value': ArduinoGoldenModel(),
-            })
+            ArduinoGoldenModel.serial_config(mocked_serial)
             params = {
                 'pwr': str(choice(arduino_ac_valid_params['P'])),
                 'mode': str(choice(arduino_ac_valid_params['M'])),
@@ -284,9 +288,8 @@ class AcControlPseudoMockedMethodsTests(TestCase):
         Check that sendCommand() on AcControl object with bad serial port
         returns a "Serial Error" response string.
         """
-        mocked_serial.configure_mock(**{
-            'side_effect': serial.SerialException('boom'),
-        })
+        ArduinoGoldenModel.serial_config(mocked_serial,
+                                         ArduinoGoldenModel.BAD)
         self.assertEqual(self.ac.sendCommand({}), u'Serial Error')
         AC.models.logger.debug.assert_called_with(
                                 u'Serial port not real error: boom')
@@ -297,9 +300,7 @@ class AcControlPseudoMockedMethodsTests(TestCase):
         Check that sendCommand() on AcControl object with missing parameter
         returns a "Missing Parameter" response string.
         """
-        mocked_serial.configure_mock(**{
-            'return_value': ArduinoGoldenModel(),
-        })
+        ArduinoGoldenModel.serial_config(mocked_serial)
         self.assertEqual(self.ac.sendCommand({}),
                          u'Missing Parameter (\'pwr\')')
     
@@ -309,9 +310,7 @@ class AcControlPseudoMockedMethodsTests(TestCase):
         Check that sendCommand() on AcControl object with missing parameter
         returns a "Missing Parameter" response string.
         """
-        mocked_serial.configure_mock(**{
-            'return_value': ArduinoGoldenModel(),
-        })
+        ArduinoGoldenModel.serial_config(mocked_serial)
         self.assertEqual(self.ac.sendCommand({'pwr': '0'}),
                          u'Missing Parameter (\'mode\')')
     
@@ -321,9 +320,7 @@ class AcControlPseudoMockedMethodsTests(TestCase):
         Check that sendCommand() on AcControl object with missing parameter
         returns a "Missing Parameter" response string.
         """
-        mocked_serial.configure_mock(**{
-            'return_value': ArduinoGoldenModel(),
-        })
+        ArduinoGoldenModel.serial_config(mocked_serial)
         self.assertEqual(self.ac.sendCommand({'pwr': '0', 'mode': '0'}),
                          u'Missing Parameter (\'fan\')')
     
@@ -333,9 +330,7 @@ class AcControlPseudoMockedMethodsTests(TestCase):
         Check that sendCommand() on AcControl object with missing parameter
         returns a "Missing Parameter" response string.
         """
-        mocked_serial.configure_mock(**{
-            'return_value': ArduinoGoldenModel(),
-        })
+        ArduinoGoldenModel.serial_config(mocked_serial)
         self.assertEqual(self.ac.sendCommand({'pwr': '0', 'mode': '0',
                                               'fan': '0'}),
                          u'Missing Parameter (\'temp\')')
@@ -346,14 +341,17 @@ class AcControlPseudoMockedMethodsTests(TestCase):
         Check that sendCommand() on AcControl object with bad parameter type
         returns a "Invalid Parameter" response string.
         """
-        mocked_serial.configure_mock(**{
-            'return_value': ArduinoGoldenModel(),
-        })
+        ArduinoGoldenModel.serial_config(mocked_serial)
         self.assertEqual(self.ac.sendCommand({'pwr': 'w00t', 'mode': '0',
                                               'fan': '0', 'temp': '25'}),
                          u'Invalid Parameter')
 
-class AcCommnadViewTests(DjangoTestCase):
+class AcCommnadViewTests(TestCase):
+    
+    def setUp(self):
+        "Configure loggers mocking for tests."
+        AC.models.logger = Mock()
+        AC.views.logger = Mock()
     
     def test_command_with_missing_params(self):
         """
@@ -376,3 +374,69 @@ class AcCommnadViewTests(DjangoTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get('Content-Type'), 'application/json')
         self.assertEqual(json.loads(response.content), u'No A/C Defined')
+    
+    @patch('serial.Serial', autospec=True)
+    def test_command_with_bad_ac(self, mocked_serial):
+        """
+        Check that the command view returns "Serial Error"
+        when a bad AcControl object is defined in DB.
+        """
+        ArduinoGoldenModel.serial_config(mocked_serial,
+                                         ArduinoGoldenModel.BAD)
+        AcControl.objects.create(name='Bad A/C', serial_port='not real')
+        response = self.client.get('%s?%s' % (reverse('ac-send-command'),
+                                   urllib.urlencode({'pwr': '0', 'mode': '0',
+                                   'fan': '0', 'temp': '25'})))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get('Content-Type'), 'application/json')
+        self.assertEqual(json.loads(response.content), u'Serial Error')
+        AC.views.logger.debug.assert_called_with('Attempting sendCommand with'
+                                                 ' Bad A/C (not real) #1')
+        
+    @patch('serial.Serial', autospec=True)
+    def test_command_with_good_ac(self, mocked_serial):
+        """
+        Check that the command view returns the expected response when
+        called with a valid AcControl object (with canned recordings).
+        """
+        AcControl.objects.create(name='Good A/C', serial_port='MOCK-SERIAL',
+                                 beep_timeout=3.0)
+        ArduinoGoldenModel.serial_config(mocked_serial)
+        params = {
+            'pwr': str(choice(arduino_ac_valid_params['P'])),
+            'mode': str(choice(arduino_ac_valid_params['M'])),
+            'fan': str(choice(arduino_ac_valid_params['F'])),
+            'temp': str(choice(arduino_ac_valid_params['T'])),
+        }
+        response = self.client.get('%s?%s' % (reverse('ac-send-command'),
+                                              urllib.urlencode(params)))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get('Content-Type'), 'application/json')
+        self.assertIn(json.loads(response.content),
+                      (u'Success', u'Beep Timeout'))
+        AC.views.logger.debug.assert_called_with(
+                'Attempting sendCommand with Good A/C (MOCK-SERIAL) #1')
+    
+    @patch('serial.Serial', autospec=True)
+    def test_command_with_bad_and_good_ac(self, mocked_serial):
+        """
+        Check that the command view returns "Serial Error"
+        when a bad AcControl object is defined in DB.
+        """
+        ArduinoGoldenModel.serial_config(mocked_serial,
+                                         ArduinoGoldenModel.BAD)
+        AcControl.objects.create(name='Bad A/C', priority=1,
+                                 serial_port='not real')
+        AcControl.objects.create(name='Good A/C', priority=2,
+                                 serial_port='MOCK-SERIAL')
+        response = self.client.get('%s?%s' % (reverse('ac-send-command'),
+                                   urllib.urlencode({'pwr': '0', 'mode': '0',
+                                   'fan': '0', 'temp': '25'})))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get('Content-Type'), 'application/json')
+        self.assertIn(json.loads(response.content),
+                      (u'Success', u'Beep Timeout'))
+        AC.views.logger.debug.assert_has_calls([
+            call('Attempting sendCommand with Bad A/C (not real) #1'),
+            call('Attempting sendCommand with Good A/C (MOCK-SERIAL) #2'),
+        ])
