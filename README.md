@@ -89,8 +89,13 @@ Local Development Setup in Windows
    * Edit it until you're happy.
 5. In command prompt, cd to `C:\Users\<name>\Workspaces\home-control\home-control-RPC\HomeControlRPC`
 6. `python manage.py syncdb`
-   * Create super user. 
-7. `python manage.py runserver 8008`
+   * Create super user.
+7. If you're using South:
+   a. `python manage.py schemamigration AC --initial`
+   b. `python manage.py migrate AC`
+   c. `python manage.py schemamigration cam --initial`
+   d. `python manage.py migrate cam`
+8. `python manage.py runserver 8008`
 
 The home-control-RPC site is now available on `http://localhost:8008/` -
 access `/admin/` to configure app-settings, and hack away at the project.
