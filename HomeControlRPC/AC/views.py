@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 def send_command(request):
     "Send an A/C command via Arduino and return response from Arduino"
+    res = u'No A/C Defined'
     if set(['mode', 'fan', 'temp', 'pwr']).issubset(request.GET.keys()):
         # Try every available AcControl object to send the command,
         #  until the first one that succeeds

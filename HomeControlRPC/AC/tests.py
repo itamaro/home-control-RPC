@@ -1,9 +1,13 @@
 import re
+import json
+import urllib
 from random import choice
 
 import serial
 from mock import Mock, call, create_autospec, patch
 from django.utils import unittest
+from django.core.urlresolvers import reverse
+from  django.test import TestCase as DjangoTestCase
 from django_nose import FastFixtureTestCase as TestCase
 
 from . import get_path
@@ -348,3 +352,27 @@ class AcControlPseudoMockedMethodsTests(TestCase):
         self.assertEqual(self.ac.sendCommand({'pwr': 'w00t', 'mode': '0',
                                               'fan': '0', 'temp': '25'}),
                          u'Invalid Parameter')
+
+class AcCommnadViewTests(DjangoTestCase):
+    
+    def test_command_with_missing_params(self):
+        """
+        If no parameters are given,
+        a "Missing Parameter" error should be returned.
+        """
+        response = self.client.get(reverse('ac-send-command'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get('Content-Type'), 'application/json')
+        self.assertEqual(json.loads(response.content), u'Missing Parameter')
+    
+    def test_command_with_no_ac(self):
+        """
+        If no AcControl objects are present,
+        a "No A/C Defined" error should be returned.
+        """
+        response = self.client.get('%s?%s' % (reverse('ac-send-command'),
+                                   urllib.urlencode({'pwr': '0', 'mode': '0',
+                                   'fan': '0', 'temp': '25'})))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get('Content-Type'), 'application/json')
+        self.assertEqual(json.loads(response.content), u'No A/C Defined')
